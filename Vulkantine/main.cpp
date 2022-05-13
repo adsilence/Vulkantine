@@ -1,35 +1,42 @@
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
+/* 
+Entry point for the program 
+Right now it just sets global values and starts the engine
+*/
 
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/vec4.hpp>
-#include <glm/mat4x4.hpp>
+#include "spdlog/spdlog.h"
+#include "json.hpp"
+
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
+
+#include "engine.h"
 
 #include <iostream>
+#include <fstream>
+
+using json = nlohmann::json;
+json settings{};
 
 int main() {
-    glfwInit();
+	std::ifstream in("res/settings.json");
+	in >> settings;
 
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    GLFWwindow* window = glfwCreateWindow(800, 600, "Vulkan window", nullptr, nullptr);
+	if (settings["dev_mode"] == true) {
+		spdlog::set_level(spdlog::level::debug);
+	}
+	else {
+		spdlog::set_level(spdlog::level::info);
+	}
 
-    uint32_t extensionCount = 0;
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
-
-    std::cout << extensionCount << " extensions supported\n";
-
-    glm::mat4 matrix;
-    glm::vec4 vec;
-    auto test = matrix * vec;
-
-    while(!glfwWindowShouldClose(window)) {
-        glfwPollEvents();
-    }
-
-    glfwDestroyWindow(window);
-
-    glfwTerminate();
-
-    return 0;
+	Engine engine{};
+	try {
+		engine.start();
+	}
+	catch (const std::exception& e) {
+		spdlog::critical("{}", e.what());
+		return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
 }
